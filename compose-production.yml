@@ -1,0 +1,14 @@
+version: '3'
+volumes:
+  code:
+services:
+  composer:
+    build:
+      dockerfile: Dockerfile
+      context: .docker/composer
+    container_name: composer
+    tty: true
+    depends_on:
+      - app
+    volumes:
+      - code:/var/www:rw

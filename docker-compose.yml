@@ -1,0 +1,66 @@
+version: '3'
+volumes:
+  code:
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    networks:
+      - app-network
+    volumes:
+      - .:/var/www:rw
+  cli:
+    build:
+      context: .docker/php-cli
+      dockerfile: Dockerfile
+    container_name: cli
+    working_dir: /var/www
+    depends_on:
+      - app
+    networks:
+      - app-network
+    volumes:
+      - .:/var/www:rw
+    command: tail -f /dev/null
+  webserver:
+    build:
+      dockerfile: Dockerfile
+      context: .docker/nginx/
+    container_name: webserver
+    restart: unless-stopped
+    tty: true
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - app-network
+    volumes:
+      - .docker/nginx/conf.d/:/etc/nginx/conf.d/
+      - .:/var/www:rw
+  db:
+    image: mariadb:10.5.2-bionic
+    container_name: db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: rootpassword
+    networks:
+      - app-network
+networks:
+  app-network:
+    driver: bridge
